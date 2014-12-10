@@ -1,0 +1,204 @@
+
+
+#############################################################################################
+#stock test
+#stock analysis version -2.0
+
+library(devtools)
+library(Hmisc)
+library(tm)
+require(RTextTools)
+library(twitteR)
+require(tm)
+require(reshape)
+require("RWeka")
+api_key <- "<apikey>
+api_secret <- "<apisecret>"
+access_token <- "<accesstoken>"
+access_token_secret <- "<accesstokensecret>"
+setup_twitter_oauth("<apikey>","<apisecret>","<accesstoken>","<accesstokensecret>")
+
+scrip<-read.csv('D:\\stockanalysis\\data1\\scriplist.csv')
+dflist<-scrip
+#for (i in 1:nrow(dflist)) 
+for (i in 1:3000) 
+{
+dflist1<-dflist[i,3]
+dflist2<-as.character(dflist1)
+dflist3<-dflist[i,1]
+dflist4<-as.character(dflist3)
+cars <- searchTwitter(dflist2, since='2014-11-25 16:00:00', until='2014-11-26 09:00:00',n=100)
+class(cars)
+dim(cars)
+head(cars)
+require(plyr)
+tweets.df = ldply(cars, function(t) t$toDataFrame() )
+str(tweets.df)
+class(tweets.df)
+new<-tweets.df
+q<-nrow(new)
+if(q>=1)
+
+{
+if(q==1)
+{
+new$row<-1
+}
+new$row<-1:nrow(new)
+new1<-new
+matrix= create_matrix(dflist2, language="english",removeStopwords=FALSE, removeNumbers=TRUE,stemWords=FALSE) 
+mat = as.matrix(matrix)
+out<-colnames(mat)
+ out<-as.data.frame(out)
+k<-nrow(out)
+if(k>=1)
+{
+for(j in 1:k)
+{
+p<-out[j,1]
+p<-as.character(p)
+p1<-p
+p2<-toupper(p1)
+p3<-capitalize(p1)
+ww<-nrow(new1)
+if(ww>=1)
+{
+b=Corpus(VectorSource(new1$text), readerControl = list(language = 'eng'))
+b<- tm_map(b, stripWhitespace) 
+b <- tm_map(b, removePunctuation) 
+b1<-grep(p1,b)
+b2<-grep(p2,b)
+b3<-grep(p3,b)
+b1<-as.data.frame(b1)
+b2<-as.data.frame(b2)
+b3<-as.data.frame(b3)
+names(b1)<-c("row")
+names(b2)<-c("row")
+names(b3)<-c("row")
+b4<-rbind(b1,b2,b3)
+new1<-merge(new1,b4,by=c("row"))
+ww<-nrow(new1)
+}
+
+}
+if(ww>=1)
+{
+new1$row<-1:nrow(new1)
+new1<-new1[,c(2:17,1)]
+}
+}
+ww1<-nrow(new1)
+if(ww1>=1)
+{
+new1$script<-dflist2
+new1$script_code<-dflist4
+
+#new1<-replace(new1,',','-')
+}
+
+if(ww1>=1)
+{
+h=paste("D:\\stockanalysis\\data1\\stocks123-test",".txt", sep="")
+write.table(new1, file=h, sep="~~~~~", append=TRUE,col.names=FALSE,row.names=FALSE)
+#Sys.sleep(60)
+}
+}
+print(i)
+	
+ 	if (.Platform$OS.type == "windows") flush.console()
+ 	
+ 	#Sys.sleep(60)
+i=i+1
+kk<-i%%51
+if(kk==0)
+{
+Sys.sleep(100)
+}
+}
+
+nw<-do.call(rbind,strsplit(readLines('D:\\stockanalysis\\data1\\stocks123-test.txt'),'~~~~~',fixed=T))
+nw<-as.data.frame(nw)
+names(nw)<-c("text","favorited","favoriteCount","replyToSN","created","truncated","replyToSID","id","replyToUID","statusSource","screenName","retweetCount","isRetweet","retweeted","longitude","latitude","row","script","script_code")
+t = nw[!(is.na(nw[,17]) ),]
+
+require(splitstackshape)
+t$DateTime <- as.POSIXct(paste(t$created), format="%Y-%m-%d %H:%M:%S")
+te1<-data.frame(do.call('rbind', strsplit(as.character(t$DateTime),' ',fixed=TRUE)))
+te2<-data.frame(do.call('rbind', strsplit(as.character(te1$X1),'-',fixed=TRUE)))
+te3<-data.frame(do.call('rbind', strsplit(as.character(te1$X2),':',fixed=TRUE)))
+names(te2)<-c("year","month","date")
+names(te3)<-c("hour","minute","second")
+t2<-cbind(t,te2,te3)
+#t1<-concat.split.multiple(data = t, split.cols = c("created"), seps = " ")
+#t2<-concat.split.multiple(data = t1, split.cols = c("created_1"), seps = "-")
+#t3<-concat.split.multiple(data = t2, split.cols = c("created_2"), seps = ":")
+   
+t4<-unique(t2[,c(19,22:25)])
+t5<-t2[,c(19,22:25)]
+
+
+for (m in 1:nrow(t2))
+{
+t6<-t2[m,]
+corpus <- Corpus(DataframeSource(data.frame(t6$text)))
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, tolower)
+corpus <- tm_map(corpus, function(x) removeWords(x, stopwords("english")))
+corpus <- tm_map(corpus, removeWords, c('delivery','ashley')) 
+corpus <- tm_map(corpus,stripWhitespace)
+ corpus<- tm_map(corpus,removeNumbers)
+BigramTokenizer_1 <- function(x) NGramTokenizer(x, Weka_control(min = 1, max = 3))
+dtm <- DocumentTermMatrix(corpus,control=list(wordLengths=c(1, Inf),minDocFreq = 5,minWordLength = 2,tokenize = BigramTokenizer_1,bounds=list(global=c(floor(length(corpus)*0.01), Inf))))
+mat<-as.matrix(dtm)
+mat1<-as.data.frame(mat)
+mat2<-t(mat1)
+mat2<-as.data.frame(mat2)
+o<-nrow(mat2)
+if(o>=2)
+{
+names(mat2)<-c("count")
+mat2$scripcode<-t5[m,1]
+mat2$Year<-t5[m,2]
+mat2$Month<-t5[m,3]
+mat2$Date<-t5[m,4]
+mat2$Hour<-t5[m,5]
+p<-rownames(mat2)
+p<-as.data.frame(p)
+names(p)<-c("word")
+mat3<-cbind(mat2,p)
+
+h=paste("D:\\stockanalysis\\data1\\stocks1-test",".txt", sep="")
+write.table(mat3, file=h, sep="~~~~~", append=TRUE,col.names=FALSE,row.names=FALSE)
+rm(mat3,p,mat2,dtm,BigramTokenizer_1,corpus,t6)
+print(m)
+	
+ 	if (.Platform$OS.type == "windows") flush.console()
+ 	
+ 	
+ }
+m=m+1
+}
+ 
+tab5rows<-do.call(rbind,strsplit(readLines('D:\\stockanalysis\\data1\\stocks1-test.txt'),'~~~~~',fixed=T))
+tab5rows<-as.data.frame(tab5rows)
+
+
+#tab5rows <- read.table("D:\\stockanalysis\\data1\\stocks1.txt", header = FALSE, sep="|",blank.lines.skip = TRUE,na.strings = "NA",comment.char = "",fill=TRUE)
+#pick the scrip code and identify name ,date,hour of tweet
+names(tab5rows)<-c("id","scripcode","year","month","day","hour","tweettext")
+tab1<-as.data.frame(sapply(tab5rows,function(x) gsub("\"", "", x)))
+con<-read.csv('D:\\stockanalysis\\data1\\context_words.csv')
+require("sqldf")
+names(con)<-c("tweettext","context")
+ out<-sqldf("select a.*,b.Context from tab1 a inner join con b on a.tweettext=b.tweettext")
+out$un <- do.call(paste, c(out[c("year","month","day","hour")], sep = "_"))
+ out2<-sqldf("select scripcode,Context,count(distinct un) as cnt from out group by scripcode,Context")
+out4<-out2[order(-out2$cnt),]
+write.csv(out4,'outputs.csv')
+
+#tab1<-unique(tab5rows[,c(2:6)])
+##############################################
+
+
+      
+
